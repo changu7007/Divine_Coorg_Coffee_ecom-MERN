@@ -8,7 +8,7 @@ import orderRoutes from "./routes/orderRoutes.js";
 import productRoutes from "./routes/productRoutes.js";
 import cors from "cors";
 import bodyParser from "body-parser";
-import path from "path
+import path from "path";
 import {fileURLToPath} from 'url;
 
 //config env

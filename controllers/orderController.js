@@ -24,7 +24,7 @@ export const orderGetController = async (req, res) => {
       .find({ buyer: req.user._id })
       .populate("products")
       .populate("cartItems")
-      .populate("buyer", "name")
+      .populate("buyer")
       .sort({ createdAt: "-1" });
     res.json(orders);
   } catch (error) {
@@ -42,7 +42,7 @@ export const orderGetAllController = async (req, res) => {
       .find({})
       .populate("products")
       .populate("cartItems")
-      .populate("buyer", "name")
+      .populate("buyer")
       .sort({ createdAt: "-1" });
     res.json(orders);
   } catch (error) {

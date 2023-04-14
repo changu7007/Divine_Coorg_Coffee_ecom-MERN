@@ -1,6 +1,80 @@
 import { comparePassword, hashPassword } from "../helpers/authHelper.js";
 import userModel from "../models/userModel.js";
+import nodemailer from "nodemailer";
+import Mailgen from "mailgen";
 import JWT from "jsonwebtoken";
+import dotenv from "dotenv";
+dotenv.config();
+
+export const sendForm = async (req, res) => {
+  try {
+    const {
+      name,
+      email,
+      mobile,
+      purposeOfOrder,
+      quantityRequired,
+      tellUsMore,
+    } = req.body;
+
+    let fromMail = process.env.MAIL;
+    let transporter = nodemailer.createTransport({
+      service: "gmail",
+      auth: {
+        user: fromMail,
+        pass: process.env.PASS,
+      },
+    });
+
+    let MailGenerator = new Mailgen({
+      theme: "default",
+      product: {
+        name: "Mailgen",
+        link: "https://mailgen.js/",
+      },
+    });
+
+    let response = {
+      body: {
+        name: "Divine Coorg Coffee",
+        intro: "New Bulk Order Request from the customer",
+        table: {
+          data: [
+            {
+              name: name,
+              email: email,
+              mobile: mobile,
+              orderDetails: purposeOfOrder,
+              quantity: quantityRequired,
+              moreDetails: tellUsMore,
+            },
+          ],
+        },
+        outro: "Looking forward to here more about your business",
+      },
+    };
+    let mail = MailGenerator.generate(response);
+
+    let message = {
+      from: email,
+      to: fromMail,
+      subject: "Bulk Order Request",
+      html: mail,
+    };
+    transporter.sendMail(message);
+    return res.status(201).json({
+      msg: "Order request Sent Successfully",
+    });
+  } catch (error) {
+    console.log(error);
+    res.status(500).send({
+      success: false,
+      message: "error while sedning",
+      error,
+    });
+  }
+};
+
 
 export const registerController = async (req, res) => {
   try {

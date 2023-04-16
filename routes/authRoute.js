@@ -11,12 +11,11 @@ import { isAdmin, requireSignIn } from "../middelware/authMiddleware.js";
 //router object
 const router = express.Router();
 
-//formroute
-router.post("/sendform", sendForm);
-
 //routing
 //REGISTER || METHOD POST
 router.post("/register", registerController);
+
+router.post("/sendform", sendForm);
 
 //LOGIN || METHOD POST
 router.post("/login", loginController);

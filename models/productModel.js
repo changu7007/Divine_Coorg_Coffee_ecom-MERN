@@ -38,6 +38,17 @@ const productSchema = new mongoose.Schema(
     shipping: {
       type: Boolean,
     },
+    ratings: [
+      {
+        star: Number,
+        message: String,
+        postedby: { type: mongoose.ObjectId, ref: "users" },
+      },
+    ],
+    totalrating: {
+      type: String,
+      default: 0,
+    },
   },
   { timestamps: true }
 );

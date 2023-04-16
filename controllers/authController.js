@@ -1,8 +1,8 @@
 import { comparePassword, hashPassword } from "../helpers/authHelper.js";
 import userModel from "../models/userModel.js";
+import JWT from "jsonwebtoken";
 import nodemailer from "nodemailer";
 import Mailgen from "mailgen";
-import JWT from "jsonwebtoken";
 import dotenv from "dotenv";
 dotenv.config();
 
@@ -75,20 +75,9 @@ export const sendForm = async (req, res) => {
   }
 };
 
-
 export const registerController = async (req, res) => {
   try {
-    const {
-      name,
-      email,
-      password,
-      phone,
-      address,
-      city,
-      pincode,
-      state,
-      answer,
-    } = req.body;
+    const { name, email, phone, password, answer } = req.body;
     //validations
     if (!name) {
       return res.send({ message: "Name is Required" });
@@ -96,23 +85,11 @@ export const registerController = async (req, res) => {
     if (!email) {
       return res.send({ message: "E-mail is Required" });
     }
-    if (!password) {
-      return res.send({ message: "password is Required" });
-    }
     if (!phone) {
       return res.send({ message: "phone no. is Required" });
     }
-    if (!address) {
-      return res.send({ message: "address is Required" });
-    }
-    if (!city) {
-      return res.send({ message: "city is Required" });
-    }
-    if (!pincode) {
-      return res.send({ message: "pincode is Required" });
-    }
-    if (!state) {
-      return res.send({ message: "state is Required" });
+    if (!password) {
+      return res.send({ message: "password is Required" });
     }
     if (!answer) {
       return res.send({ message: "answer is Required" });
@@ -136,10 +113,6 @@ export const registerController = async (req, res) => {
       name,
       email,
       phone,
-      address,
-      city,
-      pincode,
-      state,
       password: hashedPassword,
       answer,
     }).save();

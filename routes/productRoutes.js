@@ -4,6 +4,7 @@ import {
   checkoutController,
   createProductController,
   deleteProductController,
+  getAllRatings,
   getKey,
   getProductController,
   getSingleProductController,
@@ -15,6 +16,7 @@ import {
   productFiltersController,
   productListController,
   productPhotoController,
+  rating,
   realtedProductController,
   searchProductController,
   updateProductController,
@@ -40,6 +42,10 @@ router.put(
   formidable(),
   updateProductController
 );
+
+// //rating
+router.put("/rating", requireSignIn, rating);
+router.put("/getAllRating", requireSignIn, getAllRatings);
 
 //get products
 router.get("/get-product", getProductController);

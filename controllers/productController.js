@@ -11,6 +11,10 @@ import shortid from "shortid";
 //config env
 dotenv.config();
 
+var instance = new Razorpay({
+  key_id: process.env.RAZORPAY_API_KEY,
+  key_secret: process.env.RAZORPAY_API_SECRET,
+});
 
 export const createProductController = async (req, res) => {
   try {
@@ -95,7 +99,8 @@ export const getSingleProductController = async (req, res) => {
     const product = await productModel
       .findOne({ slug: req.params.slug })
       .select("-photo")
-      .populate("category");
+      .populate("category")
+      .populate("ratings.postedby");
     res.status(200).send({
       success: true,
       message: "Single Product Fetched",
@@ -388,11 +393,6 @@ export const productCategoryInstant = async (req, res) => {
 //razorpay
 export const checkoutController = async (req, res) => {
   try {
-    const instance = new Razorpay({
-        key_id: process.env.RAZORPAY_API_KEY,
-        key_secret: process.env.RAZORPAY_API_SECRET,
-    });
-    
     const options = {
       amount: Number(req.body.amount * 100), // amount in the smallest currency unit
       currency: "INR",
@@ -448,52 +448,83 @@ export const getKey = async (req, res) => {
   res.status(200).json({ key: process.env.RAZORPAY_API_KEY });
 };
 
-// //payment gateway api
-// //token
-// export const braintreeTokenController = async (req, res) => {
-//   try {
-//     gateway.clientToken.generate({}, function (err, response) {
-//       if (err) {
-//         res.status(500).send(err);
-//       } else {
-//         res.send(response);
-//       }
-//     });
-//   } catch (error) {
-//     console.log(error);
-//   }
-// };
+//product rating
+export const rating = async (req, res) => {
+  const { _id } = req.user;
+  const { star, prodId, message } = req.body;
+  try {
+    const product = await productModel
+      .findById(prodId)
+      .select("-photo")
+      .sort({ ratings: "-1" });
+    let alreadyRated = product.ratings.find(
+      (userId) => userId.postedby.toString() === _id.toString()
+    );
+    if (alreadyRated) {
+      const updateRating = await productModel.updateOne(
+        {
+          ratings: { $elemMatch: alreadyRated },
+        },
+        {
+          $set: { "ratings.$.star": star, "ratings.$.message": message },
+        },
+        {
+          new: true,
+        }
+      );
+      res.json(updateRating);
+    } else {
+      const rateProduct = await productModel.findByIdAndUpdate(
+        prodId,
+        {
+          $push: {
+            ratings: {
+              star: star,
+              message: message,
+              postedby: _id,
+            },
+          },
+        },
+        {
+          new: true,
+        }
+      );
+      res.json(rateProduct);
+    }
+  } catch (error) {
+    console.log(error);
+    res.status(400).send({
+      success: false,
+      error,
+      message: "Error in server while updating rating",
+    });
+  }
+};
 
-// //payment
-// export const brainTreePaymentController = async (req, res) => {
-//   try {
-//     const { nonce, cart } = req.body;
-//     let total = 0;
-//     cart.map((i) => {
-//       total += i.price;
-//     });
-//     let newTransaction = gateway.transaction.sale(
-//       {
-//         amount: total,
-//         paymentMethodNonce: nonce,
-//         options: {
-//           submitForSettlement: true,
-//         },
-//       },
-//       function (error, result) {
-//         if (result) {
-//           const order = new orderModel({
-//             products: cart,
-//             payment: result,
-//             buyer: req.user._id,
-//           }).save();
-//           res.json({ ok: true });
-//         } else {
-//           res.status(500).send(error);
-//         }
-//       }
-//     );
-//   } catch (error) {
-//     console.log(error);
-//   }
-// };
+export const getAllRatings = async (req, res) => {
+  const { prodId } = req.body;
+  try {
+    const getAllRatings = await productModel.findById(prodId);
+    let totalRating = getAllRatings.ratings.length;
+    let ratingSum = getAllRatings.ratings
+      .map((item) => item.star)
+      .reduce((prev, curr) => prev + curr, 0);
+    let actualRating = Math.round((ratingSum / totalRating) * 10) / 10;
+
+    let finalProduct = await productModel.findByIdAndUpdate(
+      prodId,
+      {
+        totalrating: actualRating,
+      },
+      { new: true }
+    );
+    res.json(finalProduct);
+  } catch (error) {
+    console.log(error);
+    res.status(400).send({
+      success: false,
+      error,
+      message: "Error in server",
+    });
+  }
+};

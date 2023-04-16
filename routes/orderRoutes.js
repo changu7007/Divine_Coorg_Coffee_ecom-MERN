@@ -1,5 +1,6 @@
 import express from "express";
 import {
+  orderBill,
   orderGetAllController,
   orderGetController,
   orderPostController,
@@ -18,5 +19,6 @@ router.put(
   isAdmin,
   orderStatusController
 );
+router.put("/getBill", requireSignIn, isAdmin, orderBill);
 
 export default router;

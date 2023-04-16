@@ -11,11 +11,6 @@ import shortid from "shortid";
 //config env
 dotenv.config();
 
-var instance = new Razorpay({
-  key_id: process.env.RAZORPAY_API_KEY,
-  key_secret: process.env.RAZORPAY_API_SECRET,
-});
-
 export const createProductController = async (req, res) => {
   try {
     const {
@@ -393,6 +388,11 @@ export const productCategoryInstant = async (req, res) => {
 //razorpay
 export const checkoutController = async (req, res) => {
   try {
+    var instance = new Razorpay({
+      key_id: process.env.RAZORPAY_API_KEY,
+      key_secret: process.env.RAZORPAY_API_SECRET,
+    });
+
     const options = {
       amount: Number(req.body.amount * 100), // amount in the smallest currency unit
       currency: "INR",

@@ -118,7 +118,7 @@ export const registerController = async (req, res) => {
     }).save();
     res.status(200).send({
       success: true,
-      message: "Created Successfully",
+      message: "Registered Successfully",
       user,
     });
   } catch (error) {

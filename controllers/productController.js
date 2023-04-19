@@ -451,7 +451,7 @@ export const getKey = async (req, res) => {
 //product rating
 export const rating = async (req, res) => {
   const { _id } = req.user;
-  const { star, prodId, message } = req.body;
+  const { star, prodId, message, createdAt, name } = req.body;
   try {
     const product = await productModel
       .findById(prodId)
@@ -466,10 +466,15 @@ export const rating = async (req, res) => {
           ratings: { $elemMatch: alreadyRated },
         },
         {
-          $set: { "ratings.$.star": star, "ratings.$.message": message },
+          $set: {
+            "ratings.$.star": star,
+            "ratings.$.message": message,
+            "ratings.$.name": name,
+            "ratings.$.createdAt": createdAt,
+          },
         },
         {
-          new: true,
+          timestamps: true,
         }
       );
       res.json(updateRating);
@@ -481,12 +486,14 @@ export const rating = async (req, res) => {
             ratings: {
               star: star,
               message: message,
+              name: name,
+              createdAt: createdAt,
               postedby: _id,
             },
           },
         },
         {
-          new: true,
+          timestamps: true,
         }
       );
       res.json(rateProduct);

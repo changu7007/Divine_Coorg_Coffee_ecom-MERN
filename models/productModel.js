@@ -42,6 +42,8 @@ const productSchema = new mongoose.Schema(
       {
         star: Number,
         message: String,
+        name: String,
+        createdAt: Date,
         postedby: { type: mongoose.ObjectId, ref: "users" },
       },
     ],

@@ -20,6 +20,7 @@ export const createProductController = async (req, res) => {
       category,
       categoryName,
       stock,
+      discount,
       shipping,
     } = req.fields;
     const { photo } = req.files;
@@ -157,6 +158,7 @@ export const updateProductController = async (req, res) => {
       category,
       categoryName,
       stock,
+      discount,
       shipping,
     } = req.fields;
     const { photo } = req.files;

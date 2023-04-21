@@ -31,6 +31,9 @@ const productSchema = new mongoose.Schema(
       type: Number,
       required: true,
     },
+    discount: {
+      type: Number,
+    },
     photo: {
       data: Buffer,
       contentType: String,
@@ -43,7 +46,7 @@ const productSchema = new mongoose.Schema(
         star: Number,
         message: String,
         name: String,
-        createdAt: Date,
+        createdAt: String,
         postedby: { type: mongoose.ObjectId, ref: "users" },
       },
     ],

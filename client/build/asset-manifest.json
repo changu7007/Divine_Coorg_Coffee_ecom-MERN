@@ -1,0 +1,16 @@
+{
+  "files": {
+    "main.css": "/static/css/main.fd1aca08.css",
+    "main.js": "/static/js/main.1c7cc410.js",
+    "static/media/InstantCoffee.jpg": "/static/media/InstantCoffee.410f5d078b6d041839ad.jpg",
+    "static/media/filterCoffee.jpg": "/static/media/filterCoffee.240005d2f4406a42bd5d.jpg",
+    "static/media/V2Logo.png": "/static/media/V2Logo.960a9cb52b062defc82f.png",
+    "index.html": "/index.html",
+    "main.fd1aca08.css.map": "/static/css/main.fd1aca08.css.map",
+    "main.1c7cc410.js.map": "/static/js/main.1c7cc410.js.map"
+  },
+  "entrypoints": [
+    "static/css/main.fd1aca08.css",
+    "static/js/main.1c7cc410.js"
+  ]
+}

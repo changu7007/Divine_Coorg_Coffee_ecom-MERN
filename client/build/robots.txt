@@ -1,3 +1,0 @@
-User-agent: *
-Allow: /
-Sitemap: https://divinecoorgcoffee.co.in/sitemap.xml

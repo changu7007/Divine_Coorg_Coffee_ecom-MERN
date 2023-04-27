@@ -1,12 +1,7 @@
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9" xmlns:image="http://www.google.com/schemas/sitemap-image/1.1">
 <url>
-<loc>https://divinecoorgcoffee.co.in/</loc>
-<changefreq>daily</changefreq>
-<priority>1.0</priority>
-</url>
-<url>
 <loc>https://divinecoorgcoffee.co.in/product/Gold-Filter-Coffee</loc>
-<lastmod>2023-02-18</lastmod>
+<lastmod>2023-02-27</lastmod>
 <changefreq>daily</changefreq>
 <image:image>
 <image:loc>https://divinecoorgcoffee.co.in/api/v1/product/product-photo/6421b146d1bcb8d60161a3b2</image:loc>
@@ -16,7 +11,7 @@
 </url>
 <url>
 <loc>https://divinecoorgcoffee.co.in/product/Exotic-Filter-Coffee</loc>
-<lastmod>2023-02-18</lastmod>
+<lastmod>2023-02-27</lastmod>
 <changefreq>daily</changefreq>
 <image:image>
 <image:loc>https://divinecoorgcoffee.co.in/api/v1/product/product-photo/6421b97a94d84c52c11064e0</image:loc>
@@ -26,7 +21,7 @@
 </url>
 <url>
 <loc>https://divinecoorgcoffee.co.in/product/Choco-Orange-Instant-Coffee</loc>
-<lastmod>2023-02-18</lastmod>
+<lastmod>2023-02-27</lastmod>
 <changefreq>daily</changefreq>
 <image:image>
 <image:loc>https://divinecoorgcoffee.co.in/api/v1/product/product-photo/6421b9c894d84c52c11064e9</image:loc>
@@ -36,7 +31,7 @@
 </url>
 <url>
 <loc>https://divinecoorgcoffee.co.in/product/Hazelnut-Instant-Coffee</loc>
-<lastmod>2023-02-18</lastmod>
+<lastmod>2023-02-27</lastmod>
 <changefreq>daily</changefreq>
 <image:image>
 <image:loc>https://divinecoorgcoffee.co.in/api/v1/product/product-photo/6421ba0b94d84c52c11064ef</image:loc>
@@ -46,7 +41,7 @@
 </url>
 <url>
 <loc>https://divinecoorgcoffee.co.in/product/Cardamom-Instant-Coffee</loc>
-<lastmod>2023-02-18</lastmod>
+<lastmod>2023-02-27</lastmod>
 <changefreq>daily</changefreq>
 <image:image>
 <image:loc>https://divinecoorgcoffee.co.in/api/v1/product/product-photo/6421ba4694d84c52c11064f8</image:loc>

@@ -31,15 +31,29 @@ const productSchema = new mongoose.Schema(
       type: Number,
       required: true,
     },
+    weigh: {
+      type: Number,
+      required: true,
+    },
+    tax: {
+      type: Number,
+      required: true,
+    },
+    sku: {
+      type: String,
+      required: true,
+    },
     discount: {
       type: Number,
+      required: false,
     },
     photo: {
       data: Buffer,
       contentType: String,
     },
     shipping: {
-      type: Boolean,
+      type: Number,
+      required: false,
     },
     ratings: [
       {

@@ -17,6 +17,9 @@ export const createProductController = async (req, res) => {
       name,
       description,
       price,
+      weigh,
+      tax,
+      sku,
       category,
       categoryName,
       stock,
@@ -32,6 +35,12 @@ export const createProductController = async (req, res) => {
         return res.status(500).send({ error: "Description is Required" });
       case !price:
         return res.status(500).send({ error: "Price is Required" });
+      case !weigh:
+        return res.status(500).send({ error: "Weigh is Required" });
+      case !tax:
+        return res.status(500).send({ error: "TAX is Required" });
+      case !sku:
+        return res.status(500).send({ error: "SKU is Required" });
       case !category:
         return res.status(500).send({ error: "Category is Required" });
       case !categoryName:
@@ -118,7 +127,7 @@ export const productPhotoController = async (req, res) => {
     const product = await productModel.findById(req.params.pid).select("photo");
     if (product.photo.data) {
       res.set("Content-type", product.photo.contentType);
-      return res.status(200).send(product.photo.data);
+      return res.status(200).send(product.photo.data.toString());
     }
   } catch (error) {
     console.log(error);
@@ -158,6 +167,9 @@ export const updateProductController = async (req, res) => {
       category,
       categoryName,
       stock,
+      weigh,
+      tax,
+      sku,
       discount,
       shipping,
     } = req.fields;
@@ -170,6 +182,12 @@ export const updateProductController = async (req, res) => {
         return res.status(500).send({ error: "Description is Required" });
       case !price:
         return res.status(500).send({ error: "Price is Required" });
+      case !weigh:
+        return res.status(500).send({ error: "Weigh is Required" });
+      case !tax:
+        return res.status(500).send({ error: "TAX is Required" });
+      case !sku:
+        return res.status(500).send({ error: "SKU is Required" });
       case !category:
         return res.status(500).send({ error: "Category is Required" });
       case !categoryName:

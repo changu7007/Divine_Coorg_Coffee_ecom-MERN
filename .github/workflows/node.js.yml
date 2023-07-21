@@ -25,7 +25,6 @@ jobs:
         cache: 'npm'
         
     - name: create env file 
-      working-directory: ./
       run: |
         touch .env
         echo JWT_SECRET=${{ secrets.JWT_SECRET }} >> .env

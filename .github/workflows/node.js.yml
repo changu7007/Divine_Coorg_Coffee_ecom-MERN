@@ -22,8 +22,11 @@ jobs:
       uses: actions/setup-node@v3
       with:
         node-version: ${{ matrix.node-version }}
-        cache: 'npm'
-        
+        cache: 'npm'  
+    - run: npm ci
+    - run: pm2 delete all
+    - run: npm run scale
+    - run: npm run build --if-present
     - name: create env file 
       run: |
         touch .env
@@ -37,9 +40,3 @@ jobs:
         echo AWS_REGION=${{ secrets.AWS_REGION }} >> .env
         echo PORT=8080 >> .env
         cat .env
-  
-    - run: npm ci
-    - run: pm2 delete all
-    - run: npm run scale
-    - run: npm run build --if-present
-

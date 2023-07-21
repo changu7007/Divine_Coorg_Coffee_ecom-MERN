@@ -9,16 +9,18 @@ const orderSchema = new mongoose.Schema(
 
     products: [
       {
-        type: mongoose.ObjectId,
-        ref: "Products",
+        product: { type: mongoose.ObjectId, ref: "Products" },
         quantity: reqNumber,
         totalPrice: reqNumber,
       },
     ],
     cartItems: [
       {
+        product: { type: mongoose.ObjectId, ref: "Products" },
         name: reqString,
         categoryName: reqString,
+        photo: reqString,
+        photoUrl : reqString,
         oneQuantityPrice: reqNumber,
         price: reqNumber,
         quantity: reqNumber,
@@ -27,8 +29,8 @@ const orderSchema = new mongoose.Schema(
     ],
     paymentDetails: {
       orderId: reqString,
-      razorpayOrderId: reqString,
-      razorpayPaymentId: reqString,
+      phonePeMerchantTransactionId: reqString,
+      transactionId: reqString,
     },
     buyer: {
       type: mongoose.ObjectId,

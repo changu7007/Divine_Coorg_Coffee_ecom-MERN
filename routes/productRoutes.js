@@ -5,7 +5,7 @@ import {
   createProductController,
   deleteProductController,
   getAllRatings,
-  getKey,
+  // getKey,
   getProductController,
   getSingleProductController,
   paymentVerification,
@@ -18,6 +18,7 @@ import {
   productPhotoController,
   rating,
   realtedProductController,
+  redirectController,
   searchProductController,
   updateProductController,
 } from "../controllers/productController.js";
@@ -81,11 +82,15 @@ router.get("/filter-coffee", productCategoryFilter);
 
 router.get("/instant-coffee", productCategoryInstant);
 
-router.post("/checkout", requireSignIn, checkoutController);
+router.get("/phonepe", checkoutController);
 
-router.post("/paymentVerification", paymentVerification);
+router.post("/redirect", redirectController);
 
-router.get("/getKey", getKey);
+router.all("/response", paymentVerification);
+
+
+
+// router.get("/getKey", getKey);
 
 // //payments routes
 // //token

@@ -3,13 +3,25 @@ import categoryModel from "../models/categoryModel.js";
 // import orderModel from "../models/orderModel.js";
 import fs from "fs";
 import slugify from "slugify";
-import Razorpay from "razorpay";
+// import Razorpay from "razorpay";
 import dotenv from "dotenv";
 import crypto from "crypto";
-import shortid from "shortid";
-
+// import shortid from "shortid";
+import axios from "axios";
+import { S3Client, PutObjectCommand, GetObjectCommand, DeleteObjectCommand } from "@aws-sdk/client-s3";
+import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
 //config env
 dotenv.config();
+
+const randomImageName = (bytes = 32) => crypto.randomBytes(bytes).toString('hex')
+
+const s3 = new S3Client({
+  credentials: {
+    accessKeyId: process.env.AWS_ACCESS_KEY,
+    secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY,
+  },
+  region: process.env.AWS_REGION,
+});
 
 export const createProductController = async (req, res) => {
   try {
@@ -47,16 +59,24 @@ export const createProductController = async (req, res) => {
         return res.status(500).send({ error: "CategoryName is Required" });
       case !stock:
         return res.status(500).send({ error: "stock is Required" });
-      case photo && photo.size > 1000000:
-        return res
-          .status(500)
-          .send({ error: "photo is Required and should be less then 1mb" });
+      case !photo:
+        return res.status(500).send({ error: "photo is Required " });
     }
 
     const products = new productModel({ ...req.fields, slug: slugify(name) });
     if (photo) {
-      products.photo.data = fs.readFileSync(photo.path);
-      products.photo.contentType = photo.type;
+      const fileContent = fs.createReadStream(photo.path);
+      const photoName = randomImageName()
+      const params = {
+        Bucket: process.env.BUCKET_NAME,
+        Key: photoName, 
+        Body: fileContent,
+        ContentType: photo.type,
+      };
+      const command = new PutObjectCommand(params);
+      const data = await s3.send(command);
+      console.log(data)
+      products.photo = photoName
     }
     await products.save();
     res.status(201).send({
@@ -69,7 +89,7 @@ export const createProductController = async (req, res) => {
     res.status(500).send({
       success: false,
       error,
-      message: "Error in crearing product",
+      message: "Error in creating product",
     });
   }
 };
@@ -79,10 +99,21 @@ export const getProductController = async (req, res) => {
   try {
     const products = await productModel
       .find({})
+      .populate("photo")
+      .populate("photoUrl")
       .populate("category")
-      .select("-photo")
       .limit(12)
       .sort({ createdAt: -1 });
+
+      for (const product of products) {
+          // const getParams = {
+          //   Bucket: process.env.BUCKET_NAME,
+          //   Key: product.photo, 
+          // }
+          // const getCommand= new GetObjectCommand(getParams)
+          // const url = await getSignedUrl(s3,getCommand,{expiresIn:60})
+          product.photoUrl = "https://d26jxww88dzshe.cloudfront.net/" + product.photo
+      }
     res.status(200).send({
       success: true,
       counTotal: products.length,
@@ -103,9 +134,10 @@ export const getSingleProductController = async (req, res) => {
   try {
     const product = await productModel
       .findOne({ slug: req.params.slug })
-      .select("-photo")
+      .populate("photo")
       .populate("category")
       .populate("ratings.postedby");
+       product.photoUrl = "https://d26jxww88dzshe.cloudfront.net/" + product.photo
     res.status(200).send({
       success: true,
       message: "Single Product Fetched",
@@ -142,7 +174,20 @@ export const productPhotoController = async (req, res) => {
 //delete controller
 export const deleteProductController = async (req, res) => {
   try {
-    await productModel.findByIdAndDelete(req.params.pid).select("-photo");
+    const product = await productModel.findById(req.params.pid);
+    if (!product) {
+      return res.status(404).send({
+        success: false,
+        message: "Product not found",
+      });
+    }
+    await productModel.findByIdAndDelete(req.params.pid);
+    const delParams = {
+      Bucket: process.env.BUCKET_NAME,
+      Key: product.photo, 
+    }
+    const delCommand= new DeleteObjectCommand(delParams)
+    await s3.send(delCommand)
     res.status(200).send({
       success: true,
       message: "Product Deleted successfully",
@@ -173,7 +218,6 @@ export const updateProductController = async (req, res) => {
       discount,
       shipping,
     } = req.fields;
-    const { photo } = req.files;
     //alidation
     switch (true) {
       case !name:
@@ -194,10 +238,6 @@ export const updateProductController = async (req, res) => {
         return res.status(500).send({ error: "CategoryName is Required" });
       case !stock:
         return res.status(500).send({ error: "Stock is Required" });
-      case photo && photo.size > 1000000:
-        return res
-          .status(500)
-          .send({ error: "photo is Required and should be less then 1mb" });
     }
 
     const products = await productModel.findByIdAndUpdate(
@@ -205,9 +245,21 @@ export const updateProductController = async (req, res) => {
       { ...req.fields, slug: slugify(name) },
       { new: true }
     );
-    if (photo) {
-      products.photo.data = fs.readFileSync(photo.path);
-      products.photo.contentType = photo.type;
+    if (req.files.photo) {
+      const {photo} = req.files;
+      console.log(photo)
+      const fileContent = fs.createReadStream(photo.path);
+      const photoName = randomImageName()
+      const params = {
+        Bucket: process.env.BUCKET_NAME,
+        Key: photoName, 
+        Body: fileContent,
+        ContentType: photo.type,
+      };
+      const command = new PutObjectCommand(params);
+      const data = await s3.send(command);
+      console.log(data)
+      products.photo = photoName
     }
     await products.save();
     res.status(201).send({
@@ -272,10 +324,12 @@ export const productListController = async (req, res) => {
     const page = req.params.page ? req.params.page : 1;
     const products = await productModel
       .find({})
-      .select("-photo")
       .skip((page - 1) * perPage)
       .limit(perPage)
       .sort({ createdAt: -1 });
+    for (const product of products) {
+      product.photoUrl = "https://d26jxww88dzshe.cloudfront.net/" + product.photo
+    }
     res.status(200).send({
       success: true,
       products,
@@ -301,7 +355,9 @@ export const searchProductController = async (req, res) => {
           { description: { $regex: keyword, $options: "i" } },
         ],
       })
-      .select("-photo");
+      for (const product of resutls) {
+        product.photoUrl = "https://d26jxww88dzshe.cloudfront.net/" + product.photo
+      }
     res.json(resutls);
   } catch (error) {
     console.log(error);
@@ -322,9 +378,11 @@ export const realtedProductController = async (req, res) => {
         category: cid,
         _id: { $ne: pid },
       })
-      .select("-photo")
       .limit(3)
       .populate("category");
+      for (const product of products) {
+        product.photoUrl = "https://d26jxww88dzshe.cloudfront.net/" + product.photo
+      }
     res.status(200).send({
       success: true,
       products,
@@ -344,6 +402,9 @@ export const productCategoryController = async (req, res) => {
   try {
     const category = await categoryModel.findOne({ slug: req.params.slug });
     const products = await productModel.find({ category }).populate("category");
+    for (const product of products) {
+      product.photoUrl = "https://d26jxww88dzshe.cloudfront.net/" + product.photo
+    }
     res.status(200).send({
       success: true,
       category,
@@ -365,8 +426,10 @@ export const productCategoryFilter = async (req, res) => {
     const category = await categoryModel.findOne({ slug: "filter-coffee" });
     const products = await productModel
       .find({ category })
-      .select("-photo")
       .populate("category");
+      for (const product of products) {
+        product.photoUrl = "https://d26jxww88dzshe.cloudfront.net/" + product.photo
+      }
     res.status(200).send({
       success: true,
       category,
@@ -388,8 +451,10 @@ export const productCategoryInstant = async (req, res) => {
     const category = await categoryModel.findOne({ slug: "instant-coffee" });
     const products = await productModel
       .find({ category })
-      .select("-photo")
       .populate("category");
+      for (const product of products) {
+        product.photoUrl = "https://d26jxww88dzshe.cloudfront.net/" + product.photo
+      }
     res.status(200).send({
       success: true,
       category,
@@ -404,69 +469,180 @@ export const productCategoryInstant = async (req, res) => {
     });
   }
 };
-
-//razorpay
+//phonepe
 export const checkoutController = async (req, res) => {
+  const amt = req.query.amount;
+  const number = req.query.phoneNo;
   try {
-    var instance = new Razorpay({
-      key_id: process.env.RAZORPAY_API_KEY,
-      key_secret: process.env.RAZORPAY_API_SECRET,
-    });
-
-    const options = {
-      amount: Number(req.body.amount * 100), // amount in the smallest currency unit
-      currency: "INR",
-      receipt: shortid.generate(),
+    const data = {
+      merchantId: "MERCHANTUAT",
+      merchantTransactionId: "MT7850590068188103",
+      merchantUserId: "MUID123",
+      amount: amt * 100,
+      redirectUrl: "http://localhost:8080/api/v1/product/redirect", // replace with your route
+      redirectMode: "POST",
+      callbackUrl: " http://localhost:8080/api/v1/product/response", // replace with your route
+      mobileNumber: number,
+      paymentInstrument: {
+        type: "PAY_PAGE",
+      },
     };
-    const order = await instance.orders.create(options);
-    if (!order) return res.status(500).send("Some error occured");
-    res.status(200).send({
+
+    const encode = Buffer.from(JSON.stringify(data)).toString("base64");
+
+    const saltKey = "099eb0cd-02cf-4e2a-8aca-3e6c6aff0399";
+    const saltIndex = 1;
+
+    const string = `${encode}/pg/v1/pay${saltKey}`;
+    const sha256 = crypto.createHash("sha256").update(string).digest("hex");
+
+    const finalXHeader = `${sha256}###${saltIndex}`;
+
+    const response = await axios.post(
+      "https://api-preprod.phonepe.com/apis/merchant-simulator/pg/v1/pay",
+      {
+        request: encode,
+      },
+      {
+        headers: {
+          "Content-Type": "application/json",
+          "X-VERIFY": finalXHeader,
+        },
+      }
+    );
+    const rData = response.data;
+    res.send({
       success: true,
-      order,
+      redirectUrl: rData.data.instrumentResponse.redirectInfo.url,
     });
   } catch (error) {
     console.log(error);
-    res.status(400).send({
-      success: false,
-      error,
-      message: "Error while doing Checkout",
-    });
+    res.status(500).send("Some error occurred");
   }
 };
 
-//razorpay paymentVerification
+export const redirectController = async (req, res) => {
+  const paymentDetails = req.body;
+
+  // For example, you might extract the transaction ID like this:
+  const transactionId = paymentDetails.transactionId;
+  const merchantId = paymentDetails.merchantId;
+
+  // Once validated, redirect to frontend
+  res.redirect(
+    `http://localhost:3000/cart?paymentStatus=success&transactionId=${transactionId}&merchantId=${merchantId}`
+  ); // Include other necessary details
+};
+//razorpay
+// export const checkoutController = async (req, res) => {
+//   try {
+//     var instance = new Razorpay({
+//       key_id: process.env.RAZORPAY_API_KEY,
+//       key_secret: process.env.RAZORPAY_API_SECRET,
+//     });
+
+//     const options = {
+//       amount: Number(req.body.amount * 100), // amount in the smallest currency unit
+//       currency: "INR",
+//       receipt: shortid.generate(),
+//     };
+//     const order = await instance.orders.create(options);
+//     if (!order) return res.status(500).send("Some error occured");
+//     res.status(200).send({
+//       success: true,
+//       order,
+//     });
+//   } catch (error) {
+//     console.log(error);
+//     res.status(400).send({
+//       success: false,
+//       error,
+//       message: "Error while doing Checkout",
+//     });
+//   }
+// };
+
+//phone paymentVerification
 export const paymentVerification = async (req, res) => {
   try {
-    const { razorpayOrderId, razorpayPaymentId, razorpaySignature } = req.body;
-    const body = razorpayOrderId + "|" + razorpayPaymentId;
-    const expectedSignature = crypto
-      .createHmac("sha256", process.env.RAZORPAY_API_SECRET)
-      .update(body.toString())
-      .digest("hex");
+    const input = req.body;
 
-    const isAuthentic = expectedSignature === razorpaySignature;
-    if (isAuthentic) {
-      console.log(razorpayPaymentId);
-      res.status(200).send({ success: true, message: "Payment Successfull" });
+    const saltKey = "099eb0cd-02cf-4e2a-8aca-3e6c6aff0399";
+    const saltIndex = 1;
+
+    const finalXHeader =
+      crypto
+        .createHash("sha256")
+        .update(
+          `/pg/v1/status/${input.merchantId}/${input.transactionId}${saltKey}`
+        )
+        .digest("hex") + `###${saltIndex}`;
+
+    const response = await axios.get(
+      `https://api-preprod.phonepe.com/apis/merchant-simulator/pg/v1/status/${input.merchantId}/${input.transactionId}`,
+      {
+        headers: {
+          "Content-Type": "application/json",
+          accept: "application/json",
+          "X-VERIFY": finalXHeader,
+          "X-MERCHANT-ID": input.transactionId,
+        },
+      }
+    );
+
+    console.log(response.data);
+    const data = response.data;
+    if (data.code === "PAYMENT_SUCCESS") {
+      res.send({
+        success: true,
+        message: "Your payment is successful.",
+        paymentDetails: data.data,
+      });
     } else {
-      res.status(400).json({
+      res.send({
         success: false,
+        message: "Your payment was not successful.",
       });
     }
   } catch (error) {
     console.log(error);
-    res.status(400).send({
-      success: false,
-      error,
-      message: "Error while payment Verification",
-    });
+    res.status(500).send("Some error occurred");
   }
 };
 
+//razorpay paymentVerification
+// export const paymentVerification = async (req, res) => {
+//   try {
+//     const { razorpayOrderId, razorpayPaymentId, razorpaySignature } = req.body;
+//     const body = razorpayOrderId + "|" + razorpayPaymentId;
+//     const expectedSignature = crypto
+//       .createHmac("sha256", process.env.RAZORPAY_API_SECRET)
+//       .update(body.toString())
+//       .digest("hex");
+
+//     const isAuthentic = expectedSignature === razorpaySignature;
+//     if (isAuthentic) {
+//       console.log(razorpayPaymentId);
+//       res.status(200).send({ success: true, message: "Payment Successfull" });
+//     } else {
+//       res.status(400).json({
+//         success: false,
+//       });
+//     }
+//   } catch (error) {
+//     console.log(error);
+//     res.status(400).send({
+//       success: false,
+//       error,
+//       message: "Error while payment Verification",
+//     });
+//   }
+// };
+
 //razorpay key
-export const getKey = async (req, res) => {
-  res.status(200).json({ key: process.env.RAZORPAY_API_KEY });
-};
+// export const getKey = async (req, res) => {
+//   res.status(200).json({ key: process.env.RAZORPAY_API_KEY });
+// };
 
 //product rating
 export const rating = async (req, res) => {
@@ -475,8 +651,8 @@ export const rating = async (req, res) => {
   try {
     const product = await productModel
       .findById(prodId)
-      .select("-photo")
       .sort({ ratings: "-1" });
+      product.photoUrl = "https://d26jxww88dzshe.cloudfront.net/" + product.photo
     let alreadyRated = product.ratings.find(
       (userId) => userId.postedby.toString() === _id.toString()
     );

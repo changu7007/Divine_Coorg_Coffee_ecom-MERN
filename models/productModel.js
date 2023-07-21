@@ -48,12 +48,16 @@ const productSchema = new mongoose.Schema(
       required: false,
     },
     photo: {
-      data: Buffer,
-      contentType: String,
-    },
+        type: String,
+        required: true,
+      },
+    photoUrl: {
+        type: String,
+      },
     shipping: {
       type: Number,
       required: false,
+
     },
     ratings: [
       {

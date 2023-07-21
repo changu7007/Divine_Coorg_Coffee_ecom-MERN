@@ -28,6 +28,7 @@ app.use(cors());
 app.use(express.json());
 app.use(bodyParser.json());
 app.use(morgan("dev"));
+app.use(express.urlencoded({ extended: true })); 
 app.use(express.static(path.join(__dirname, "./client/build")));
 
 //routes

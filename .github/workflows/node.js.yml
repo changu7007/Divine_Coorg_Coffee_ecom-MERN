@@ -33,7 +33,7 @@ jobs:
 #           echo BUCKET_NAME=${{ secrets.BUCKET_NAME }} >> .env
 #           echo AWS_REGION=${{ secrets.AWS_REGION }} >> .env
 #           echo PORT=8080 >> .env
-#           cat .env
+#           cat .en
           
       - run: npm ci
 #       - run: pm2 delete all

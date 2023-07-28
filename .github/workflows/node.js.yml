@@ -36,7 +36,7 @@ jobs:
 #           cat .env
           
       - run: npm ci
-      - run: pm2 delete all
-      - run : npm run scale
+#       - run: pm2 delete all
+#       - run : npm run scale
       - run: npm run build --if-present
 

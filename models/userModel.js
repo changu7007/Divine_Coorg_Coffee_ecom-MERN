@@ -1,4 +1,5 @@
 import mongoose from "mongoose";
+import { hashPassword } from "../helpers/authHelper.js";
 
 const userSchema = new mongoose.Schema(
   {
@@ -40,6 +41,13 @@ const userSchema = new mongoose.Schema(
       type: {},
       require: true,
     },
+    refreshToken:{
+      type: String,
+      require: true
+    },
+    passwordChangedAt: Date,
+    passwordResetToken: String,
+    passwordResetExpires: Date,
     role: {
       type: Number,
       default: 0,
@@ -47,5 +55,20 @@ const userSchema = new mongoose.Schema(
   },
   { timestamps: true }
 );
+
+// userSchema.pre("save",async function (next) {
+//   if (!this.isModified("password")) {
+//     next()
+//   }
+//   hashPassword(this.password);
+//   next()
+// })
+
+// userSchema.methods.createPasswordResetToken = async() => {
+//   const resetToken = crypto.randomBytes(32).toString("hex");
+//   this.passwordResetToken = crypto.createHash("256").update(resetToken).digest("hex")
+//   this.passwordResetExpires = Date.now()+30*60*1000 //10min
+//   return resetToken
+// }
 
 export default mongoose.model("users", userSchema);

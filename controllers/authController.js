@@ -4,6 +4,8 @@ import JWT from "jsonwebtoken";
 import nodemailer from "nodemailer";
 import Mailgen from "mailgen";
 import dotenv from "dotenv";
+import crypto from "crypto";
+import { generateRefreshToken } from "../config/refreshToken.js";
 dotenv.config();
 
 export const sendForm = async (req, res) => {
@@ -73,6 +75,51 @@ export const sendForm = async (req, res) => {
       error,
     });
   }
+};
+
+const sendForgotEmail = async (data, req, res) => {
+  let transporter = nodemailer.createTransport({
+    service: "gmail",
+    auth: {
+      user: process.env.MAIL,
+      pass: process.env.PASS,
+    },
+  });
+
+  let MailGenerator = new Mailgen({
+    theme: "default",
+    product: {
+      name: "Divine Coorg Coffee",
+      link: "https://divinecoorgcoffee.co.in",
+    },
+  });
+
+  let response = {
+    body: {
+      name: "User!",
+      intro:
+        "You have received this email because a password reset request for your account was received.",
+      action: {
+        instructions: "Click the button below to reset your password:",
+        button: {
+          color: "#DC4D2F",
+          text: "Reset your password",
+          link: data.url,
+        },
+      },
+      outro:
+        "Link is valid upto 10 minutes only and If you did not request a password reset, no further action is required on your part.",
+    },
+  };
+  let mail = MailGenerator.generate(response);
+
+  let message = {
+    from: process.env.MAIL,
+    to: data.to,
+    subject: "Password Reset Link",
+    html: mail,
+  };
+  transporter.sendMail(message);
 };
 
 export const registerController = async (req, res) => {
@@ -160,9 +207,18 @@ export const loginController = async (req, res) => {
     }
 
     //token
-    const token = await JWT.sign({ _id: user._id }, process.env.JWT_SECRET, {
-      expiresIn: "7d",
+    const token = await generateRefreshToken(user?._id);
+
+    const updateUser = await userModel.findByIdAndUpdate(
+      user?._id,
+      { refreshToken: token },
+      { new: true }
+    );
+    res.cookie("refreshToken", token, {
+      httpOnly: true,
+      maxAge: 72 * 60 * 60 * 1000,
     });
+
     res.status(200).send({
       success: true,
       message: "Login Successfully",
@@ -175,8 +231,8 @@ export const loginController = async (req, res) => {
         pincode: user.pincode,
         state: user.state,
         role: user.role,
+        token: token,
       },
-      token,
     });
   } catch (error) {
     console.log(error);
@@ -192,21 +248,7 @@ export const loginController = async (req, res) => {
 export const forgotPasswordController = async (req, res) => {
   try {
     const { email, answer, newPassword } = req.body;
-    if (!email) {
-      return res.status(400).send({
-        message: "email is required",
-      });
-    }
-    if (!answer) {
-      return res.status(400).send({
-        message: "answer is required",
-      });
-    }
-    if (!newPassword) {
-      return res.status(400).send({
-        message: "New Password is required",
-      });
-    }
+
     //check user exist
     const user = await userModel.findOne({ email, answer });
     //validation
@@ -232,6 +274,77 @@ export const forgotPasswordController = async (req, res) => {
   }
 };
 
+export const forgotPasswordToken = async (req, res) => {
+  const { email } = req.body;
+  const user = await userModel.findOne({ email });
+  if (!user) {
+    return res.status(400).send({
+      success:false,
+      message: "User Not found with this email",
+    });
+  }
+  try {
+    const token = crypto.randomBytes(32).toString("hex");
+    user.passwordResetToken = crypto
+      .createHash("sha256")
+      .update(token)
+      .digest("hex");
+    user.passwordResetExpires = Date.now() + 30 * 60 * 1000; //10min
+    await user.save();
+    const resetUrl = `http://divinecoorgcoffee.co.in/reset-password/${token}`;
+    const data = {
+      to: email,
+      url: resetUrl,
+    };
+    sendForgotEmail(data);
+    // res.json(token);
+    res.status(200).send({
+      success:true,
+      message: "We have sent you an reset link to your email",
+    });
+  } catch (error) {
+    console.log(error);
+    res.status(500).send({
+      success: false,
+      message: "Something Went Wrong",
+      error,
+    });
+  }
+};
+
+export const resetPassword = async (req, res) => {
+  const { password } = req.body;
+  const { token } = req.params;
+  const hashedToken = crypto.createHash("sha256").update(token).digest("hex");
+  try {
+    const user = await userModel.findOne({
+      passwordResetToken: hashedToken,
+      passwordResetExpires: { $gt: Date.now() },
+    });
+    if (!user) {
+      return res.status(400).send({
+        success:false,
+        message: "Token Expired, Please Try Again later",
+      });
+    }
+    user.password =await hashPassword(password);
+    user.passwordResetToken = undefined;
+    user.passwordResetExpires = undefined;
+    await user.save();
+    res.status(200).send({
+      success:true,
+      message: "Password Changed Succesfully!",
+    });
+  } catch (error) {
+    console.log(error)
+    res.status(500).send({
+      success: false,
+      message: "Something Went Wrong",
+      error,
+    });
+  }
+ 
+};
 //test controller
 export const testController = (req, res) => {
   try {
@@ -281,4 +394,59 @@ export const updateProfileController = async (req, res) => {
       error,
     });
   }
+};
+
+export const handleRefreshToken = async (req, res) => {
+  const cookie = req.cookies;
+  if (!cookie?.refreshToken) {
+    return res.status(400).send({
+      success: false,
+      message: "No refresh token in cookies",
+    });
+  }
+  const refreshToken = cookie.refreshToken;
+  const user = await userModel.findOne({ refreshToken });
+  if (!user) {
+    return res.status(400).send({
+      success: false,
+      message: "No refresh token present in db or not matched",
+    });
+  }
+  JWT.verify(refreshToken, process.env.JWT_SECRET, (err, decoded) => {
+    if (err || user.id !== decoded.id) {
+      return res.status(400).send({
+        success: false,
+        message: "Something wrong with refreshToken",
+      });
+    }
+    const accessToken = generateRefreshToken(user?._id);
+    res.json({ accessToken });
+  });
+};
+
+export const logout = async (req, res) => {
+  const cookie = req.cookies;
+  if (!cookie?.refreshToken) {
+    return res.status(400).send({
+      success: false,
+      message: "No refresh token in cookies",
+    });
+  }
+  const { refreshToken } = cookie.refreshToken;
+  const user = await userModel.findOne({ refreshToken });
+  if (!user) {
+    res.clearCookie("refreshToken", {
+      httpOnly: true,
+      secure: true,
+    });
+    return res.sendStatus(204);
+  }
+  await userModel.findOneAndUpdate(refreshToken, {
+    refreshToken: "",
+  });
+  res.clearCookie("refreshToken", {
+    httpOnly: true,
+    secure: true,
+  });
+  res.sendStatus(204);
 };

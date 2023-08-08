@@ -6,6 +6,10 @@ import {
   forgotPasswordController,
   updateProfileController,
   sendForm,
+  handleRefreshToken,
+  logout,
+  forgotPasswordToken,
+  resetPassword,
 } from "../controllers/authController.js";
 import { isAdmin, requireSignIn } from "../middelware/authMiddleware.js";
 //router object
@@ -20,8 +24,14 @@ router.post("/sendform", sendForm);
 //LOGIN || METHOD POST
 router.post("/login", loginController);
 
+router.get("/refresh",handleRefreshToken)
+router.get("/logout",logout)
+
+
 //FORGET PASSWORD
 router.post("/forgot-password", forgotPasswordController);
+router.post("/forgot-password-token", forgotPasswordToken);
+router.put("/reset-password/:token", resetPassword);
 
 //test routes
 router.get("/test", requireSignIn, isAdmin, testController);

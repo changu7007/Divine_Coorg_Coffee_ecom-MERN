@@ -10,6 +10,7 @@ import cors from "cors";
 import bodyParser from "body-parser";
 import path from "path";
 import { fileURLToPath } from "url";
+import cookieParser from "cookie-parser";
 
 //config env
 dotenv.config();
@@ -29,7 +30,8 @@ app.use(express.json());
 app.use(bodyParser.json());
 app.use(morgan("dev"));
 app.use(express.urlencoded({ extended: true })); 
-app.use(express.static(path.join(__dirname, "./client/build")));
+app.use(cookieParser())
+app.use(express.static(path.join(__dirname, "../client/build")));
 
 //routes
 app.use("/api/v1/auth", authRoutes);
@@ -37,15 +39,15 @@ app.use("/api/v1/category", categoryRoutes);
 app.use("/api/v1/product", productRoutes);
 app.use("/api/v1/order", orderRoutes);
 
-//rest api
+// rest api
 app.use("*", function (req, res) {
-  res.sendFile(path.join(__dirname, "./client/build/index.html"));
+  res.sendFile(path.join(__dirname, "../client/build/index.html"));
 });
 
-//port
+// port
 const PORT = process.env.PORT || 8080;
 
-//run or listen
+// run or listen
 app.listen(PORT, () => {
   console.log(`Server Running On ${PORT}`);
 });

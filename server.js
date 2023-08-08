@@ -31,7 +31,7 @@ app.use(bodyParser.json());
 app.use(morgan("dev"));
 app.use(express.urlencoded({ extended: true })); 
 app.use(cookieParser())
-app.use(express.static(path.join(__dirname, "../client/build")));
+app.use(express.static(path.join(__dirname, "./client/build")));
 
 //routes
 app.use("/api/v1/auth", authRoutes);
@@ -41,7 +41,7 @@ app.use("/api/v1/order", orderRoutes);
 
 // rest api
 app.use("*", function (req, res) {
-  res.sendFile(path.join(__dirname, "../client/build/index.html"));
+  res.sendFile(path.join(__dirname, "./client/build/index.html"));
 });
 
 // port

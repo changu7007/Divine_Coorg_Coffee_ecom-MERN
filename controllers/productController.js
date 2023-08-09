@@ -646,7 +646,7 @@ export const paymentVerification = async (req, res) => {
 
 //product rating
 export const rating = async (req, res) => {
-  const { _id } = req.user;
+  const { id } = req.user;
   const { star, prodId, message, createdAt, name } = req.body;
   try {
     const product = await productModel
@@ -654,7 +654,7 @@ export const rating = async (req, res) => {
       .sort({ ratings: "-1" });
       product.photoUrl = "https://d26jxww88dzshe.cloudfront.net/" + product.photo
     let alreadyRated = product.ratings.find(
-      (userId) => userId.postedby.toString() === _id.toString()
+      (userId) => userId.postedby.toString() === id.toString()
     );
     if (alreadyRated) {
       const updateRating = await productModel.updateOne(
@@ -684,7 +684,7 @@ export const rating = async (req, res) => {
               message: message,
               name: name,
               createdAt: createdAt,
-              postedby: _id,
+              postedby: id,
             },
           },
         },

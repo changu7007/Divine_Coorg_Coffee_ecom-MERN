@@ -231,8 +231,8 @@ export const loginController = async (req, res) => {
         pincode: user.pincode,
         state: user.state,
         role: user.role,
-        token: token,
       },
+      token: token,
     });
   } catch (error) {
     console.log(error);
@@ -358,21 +358,15 @@ export const testController = (req, res) => {
 //update-profile
 export const updateProfileController = async (req, res) => {
   try {
-    const { name, email, password, phone, address, city, pincode, state } =
+    const { name, email,  phone, address, city, pincode, state } =
       req.body;
-    const user = await userModel.findById(req.user._id);
+    console.log(req.user.id)
+    const user = await userModel.findById(req.user.id);
     //password
-    if (password && password.length < 6) {
-      return res.json({
-        error: "Passsword is required and should be more than 6 character long",
-      });
-    }
-    const hashedPassword = password ? await hashPassword(password) : undefined;
     const updatedUser = await userModel.findByIdAndUpdate(
-      req.user._id,
+      user._id,
       {
         name: name || user.name,
-        password: hashedPassword || user.password,
         phone: phone || user.phone,
         address: address || user.address,
         city: city || user.city,
@@ -395,7 +389,6 @@ export const updateProfileController = async (req, res) => {
     });
   }
 };
-
 export const handleRefreshToken = async (req, res) => {
   const cookie = req.cookies;
   if (!cookie?.refreshToken) {

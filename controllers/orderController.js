@@ -75,7 +75,7 @@ export const sendConfirmationEmail = async (req, res) => {
 
 export const orderPostController = async (req, res) => {
   try {
-    const order = await orderModel.create({ ...req.body, buyer: req.user._id });
+    const order = await orderModel.create({ ...req.body, buyer: req.user.id });
     res.status(201).send({
       success: true,
       order,
@@ -93,7 +93,7 @@ export const orderPostController = async (req, res) => {
 export const orderGetController = async (req, res) => {
   try {
     const orders = await orderModel
-      .find({ buyer: req.user._id })
+      .find({ buyer: req.user.id })
       .populate("products")
       .populate("cartItems")
       .populate("buyer")

@@ -2,11 +2,12 @@ import orderModel from "../models/orderModel.js";
 import nodemailer from "nodemailer";
 import Mailgen from "mailgen";
 import dotenv from "dotenv";
+import productModel from "../models/productModel.js";
 dotenv.config();
 
 export const sendConfirmationEmail = async (req, res) => {
   try {
-    const { email, name, orderId, transactionId, cartItems, subTotal } =
+    const { email, name, orderId, transactionId, paymentMethod, cartItems, subTotal } =
       req.body;
     let transporter = nodemailer.createTransport({
       service: "gmail",
@@ -15,7 +16,16 @@ export const sendConfirmationEmail = async (req, res) => {
         pass: process.env.PASS,
       },
     });
-    const simplifiedCartItems = cartItems.map(({name, price, quantity}) => ({name, price, quantity}));
+    const shippingCharge = paymentMethod === "cod" ? 50 : "";
+    const shippingMessage = paymentMethod === "cod" ? `Shipping charges: ${shippingCharge}` : "Free Shipping";
+    const simplifiedCartItems = cartItems.map(({ name, price, quantity }) => ({
+      name,
+      price,
+      quantity,
+    }));
+    if (paymentMethod === "cod") {
+      simplifiedCartItems.push({ name: "Shipping Charges", price: shippingCharge, quantity: 1 });
+    }
     // Create a new mail generator object
     let mailGenerator = new Mailgen({
       theme: "default",
@@ -41,7 +51,7 @@ export const sendConfirmationEmail = async (req, res) => {
             ],
           },
         },
-        outro: `The total price is ${subTotal}.\n\nYour Transaction ID: ${transactionId} for Reference.\n\nThank you for your purchase!`,
+        outro: `The total price is ${subTotal}.\n\n${shippingMessage}\n\nYour Transaction ID / Payment Method: "${transactionId}" for Reference.\n\nThank you for your purchase!`,
       },
     };
 
@@ -63,7 +73,6 @@ export const sendConfirmationEmail = async (req, res) => {
     return res.status(201).json({
       msg: "Order request Sent Successfully",
     });
-
   } catch (error) {
     res.status(500).send({
       success: false,
@@ -74,8 +83,19 @@ export const sendConfirmationEmail = async (req, res) => {
 };
 
 export const orderPostController = async (req, res) => {
+  console.log(req.body);
   try {
+    const { cartItems } = req.body;
     const order = await orderModel.create({ ...req.body, buyer: req.user.id });
+    let update = cartItems.map((item) => {
+      return {
+        updateOne: {
+          filter: { _id: item._id },
+          update: { $inc: { stock: -item.quantity, sold: +item.quantity } },
+        },
+      };
+    });
+    const updated = await productModel.bulkWrite(update, {});
     res.status(201).send({
       success: true,
       order,

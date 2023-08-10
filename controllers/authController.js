@@ -124,7 +124,7 @@ const sendForgotEmail = async (data, req, res) => {
 
 export const registerController = async (req, res) => {
   try {
-    const { name, email, phone, password, answer } = req.body;
+    const { name, email, phone, password } = req.body;
     //validations
     if (!name) {
       return res.send({ message: "Name is Required" });
@@ -137,9 +137,6 @@ export const registerController = async (req, res) => {
     }
     if (!password) {
       return res.send({ message: "password is Required" });
-    }
-    if (!answer) {
-      return res.send({ message: "answer is Required" });
     }
 
     //checkUser
@@ -161,7 +158,6 @@ export const registerController = async (req, res) => {
       email,
       phone,
       password: hashedPassword,
-      answer,
     }).save();
     res.status(200).send({
       success: true,

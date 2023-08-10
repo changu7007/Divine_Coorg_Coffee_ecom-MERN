@@ -29,8 +29,9 @@ const orderSchema = new mongoose.Schema(
     ],
     paymentDetails: {
       orderId: reqString,
-      phonePeMerchantTransactionId: reqString,
+      merchantTransactionId: reqString,
       transactionId: reqString,
+      paymentMethod:reqString
     },
     buyer: {
       type: mongoose.ObjectId,

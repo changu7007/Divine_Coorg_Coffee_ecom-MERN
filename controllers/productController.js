@@ -533,8 +533,10 @@ export const redirectController = async (req, res) => {
     `http://localhost:3000/cart?paymentStatus=success&transactionId=${transactionId}&merchantId=${merchantId}`
   ); // Include other necessary details
 };
+
+
 //razorpay
-// export const checkoutController = async (req, res) => {
+// export const checkoutRazorpayController = async (req, res) => {
 //   try {
 //     var instance = new Razorpay({
 //       key_id: process.env.RAZORPAY_API_KEY,
@@ -611,7 +613,7 @@ export const paymentVerification = async (req, res) => {
 };
 
 //razorpay paymentVerification
-// export const paymentVerification = async (req, res) => {
+// export const paymentRazorpayVerification = async (req, res) => {
 //   try {
 //     const { razorpayOrderId, razorpayPaymentId, razorpaySignature } = req.body;
 //     const body = razorpayOrderId + "|" + razorpayPaymentId;

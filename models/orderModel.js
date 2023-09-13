@@ -6,7 +6,27 @@ const reqNumber = { type: Number, required: true };
 const orderSchema = new mongoose.Schema(
   {
     subTotal: reqNumber,
-
+    coupounDetails: {
+      name: {
+        type: String,
+      },
+      discount: {
+        type: Number,
+        default: 0,
+      },
+    },
+    shippingCharge: {
+      type: Number,
+      default: 0,
+    },
+    shippingDetails : {
+      name:reqString,
+      phone:reqString,
+      address:reqString,
+      city:reqString,
+      pincode:reqNumber,
+      state:reqString,
+    },
     products: [
       {
         product: { type: mongoose.ObjectId, ref: "Products" },
@@ -20,7 +40,6 @@ const orderSchema = new mongoose.Schema(
         name: reqString,
         categoryName: reqString,
         photo: reqString,
-        photoUrl : reqString,
         oneQuantityPrice: reqNumber,
         price: reqNumber,
         quantity: reqNumber,
@@ -31,7 +50,7 @@ const orderSchema = new mongoose.Schema(
       orderId: reqString,
       merchantTransactionId: reqString,
       transactionId: reqString,
-      paymentMethod:reqString
+      paymentMethod: reqString,
     },
     buyer: {
       type: mongoose.ObjectId,
@@ -41,6 +60,9 @@ const orderSchema = new mongoose.Schema(
       type: String,
       default: "Processing",
       enum: ["Not Process", "Processing", "Shipped", "deliverd", "cancel"],
+    },
+    invoiceUrl: {
+      type: String,
     },
   },
   { timestamps: true }

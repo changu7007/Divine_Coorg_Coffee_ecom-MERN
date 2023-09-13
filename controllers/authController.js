@@ -439,3 +439,22 @@ export const logout = async (req, res) => {
   });
   res.sendStatus(204);
 };
+
+
+export const getAllUsers = async (req,res) => {
+  try {
+    const getUsers = await userModel.find(req.query).select("-password").sort({ createdAt: "-1" });;
+    res.status(200).send({
+      success: true,
+      message: "Fetched All Users",
+      getUsers,
+    });
+  } catch (error) {
+    console.log(error);
+    res.status(500).send({
+      success: false,
+      message: "error in Fetching Users",
+      error,
+    });
+  }
+}

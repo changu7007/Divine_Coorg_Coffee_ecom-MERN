@@ -6,6 +6,8 @@ import authRoutes from "./routes/authRoute.js";
 import categoryRoutes from "./routes/categoryRoutes.js";
 import orderRoutes from "./routes/orderRoutes.js";
 import productRoutes from "./routes/productRoutes.js";
+import blogRoutes from "./routes/blogRoutes.js";
+import couponRoutes from "./routes/couponRoute.js";
 import cors from "cors";
 import bodyParser from "body-parser";
 import path from "path";
@@ -33,13 +35,17 @@ app.use(express.urlencoded({ extended: true }));
 app.use(cookieParser())
 app.use(express.static(path.join(__dirname, "./client/build")));
 
+
 //routes
 app.use("/api/v1/auth", authRoutes);
 app.use("/api/v1/category", categoryRoutes);
 app.use("/api/v1/product", productRoutes);
 app.use("/api/v1/order", orderRoutes);
+app.use("/api/v1/blog", blogRoutes);
+app.use("/api/v1/coupon", couponRoutes);
 
-// rest api
+
+
 app.use("*", function (req, res) {
   res.sendFile(path.join(__dirname, "./client/build/index.html"));
 });

@@ -8,12 +8,19 @@ import dotenv from "dotenv";
 import crypto from "crypto";
 // import shortid from "shortid";
 import axios from "axios";
-import { S3Client, PutObjectCommand, GetObjectCommand, DeleteObjectCommand } from "@aws-sdk/client-s3";
+import {
+  S3Client,
+  PutObjectCommand,
+  GetObjectCommand,
+  DeleteObjectCommand,
+} from "@aws-sdk/client-s3";
 import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
+import couponModel from "../models/couponModel.js";
 //config env
 dotenv.config();
 
-const randomImageName = (bytes = 32) => crypto.randomBytes(bytes).toString('hex')
+const randomImageName = (bytes = 32) =>
+  crypto.randomBytes(bytes).toString("hex");
 
 const s3 = new S3Client({
   credentials: {
@@ -35,6 +42,8 @@ export const createProductController = async (req, res) => {
       category,
       categoryName,
       stock,
+      isFeatured,
+      isNewArrival,
       discount,
       shipping,
     } = req.fields;
@@ -66,17 +75,17 @@ export const createProductController = async (req, res) => {
     const products = new productModel({ ...req.fields, slug: slugify(name) });
     if (photo) {
       const fileContent = fs.createReadStream(photo.path);
-      const photoName = randomImageName()
+      const photoName = randomImageName();
       const params = {
         Bucket: process.env.BUCKET_NAME,
-        Key: photoName, 
+        Key: photoName,
         Body: fileContent,
         ContentType: photo.type,
       };
       const command = new PutObjectCommand(params);
       const data = await s3.send(command);
-      console.log(data)
-      products.photo = photoName
+      console.log(data);
+      products.photo = "https://d26jxww88dzshe.cloudfront.net/" + photoName;
     }
     await products.save();
     res.status(201).send({
@@ -100,20 +109,9 @@ export const getProductController = async (req, res) => {
     const products = await productModel
       .find({})
       .populate("photo")
-      .populate("photoUrl")
       .populate("category")
       .limit(12)
       .sort({ createdAt: -1 });
-
-      for (const product of products) {
-          // const getParams = {
-          //   Bucket: process.env.BUCKET_NAME,
-          //   Key: product.photo, 
-          // }
-          // const getCommand= new GetObjectCommand(getParams)
-          // const url = await getSignedUrl(s3,getCommand,{expiresIn:60})
-          product.photoUrl = "https://d26jxww88dzshe.cloudfront.net/" + product.photo
-      }
     res.status(200).send({
       success: true,
       counTotal: products.length,
@@ -135,9 +133,8 @@ export const getSingleProductController = async (req, res) => {
     const product = await productModel
       .findOne({ slug: req.params.slug })
       .populate("photo")
-      .populate("category")
-      .populate("ratings.postedby");
-       product.photoUrl = "https://d26jxww88dzshe.cloudfront.net/" + product.photo
+      .populate("category");
+    // .populate("ratings.postedby");
     res.status(200).send({
       success: true,
       message: "Single Product Fetched",
@@ -153,19 +150,43 @@ export const getSingleProductController = async (req, res) => {
   }
 };
 
-// get photo
-export const productPhotoController = async (req, res) => {
+//getFeaturedProducts
+export const getAllFeaturedProducts = async (req, res) => {
   try {
-    const product = await productModel.findById(req.params.pid).select("photo");
-    if (product.photo.data) {
-      res.set("Content-type", product.photo.contentType);
-      return res.status(200).send(product.photo.data.toString());
-    }
+    const featuredProducts = await productModel
+      .find({ isFeatured: true })
+      .populate("category");
+    res.status(200).send({
+      success: true,
+      message: "Fetched All Featured Products",
+      featuredProducts,
+    });
   } catch (error) {
     console.log(error);
     res.status(500).send({
       success: false,
-      message: "Erorr while getting photo",
+      message: "Something Went Wrong while fetching Featired Products",
+      error,
+    });
+  }
+};
+
+//getNewArrivalProducts
+export const getNewArrivalProducts = async (req, res) => {
+  try {
+    const newArrivalProducts = await productModel
+      .find({ isNewArrival: true })
+      .populate("category");
+    res.status(200).send({
+      success: true,
+      message: "Fetched All New Arrival Products",
+      newArrivalProducts,
+    });
+  } catch (error) {
+    console.log(error);
+    res.status(500).send({
+      success: false,
+      message: "Something Went Wrong while fetching new Arrival Products",
       error,
     });
   }
@@ -182,12 +203,12 @@ export const deleteProductController = async (req, res) => {
       });
     }
     await productModel.findByIdAndDelete(req.params.pid);
-    const delParams = {
-      Bucket: process.env.BUCKET_NAME,
-      Key: product.photo, 
-    }
-    const delCommand= new DeleteObjectCommand(delParams)
-    await s3.send(delCommand)
+    // const delParams = {
+    //   Bucket: process.env.BUCKET_NAME,
+    //   Key: product.photo,
+    // };
+    // const delCommand = new DeleteObjectCommand(delParams);
+    // await s3.send(delCommand);
     res.status(200).send({
       success: true,
       message: "Product Deleted successfully",
@@ -215,6 +236,8 @@ export const updateProductController = async (req, res) => {
       weigh,
       tax,
       sku,
+      isFeatured,
+      isNewArrival,
       discount,
       shipping,
     } = req.fields;
@@ -246,20 +269,18 @@ export const updateProductController = async (req, res) => {
       { new: true }
     );
     if (req.files.photo) {
-      const {photo} = req.files;
-      console.log(photo)
+      const { photo } = req.files;
       const fileContent = fs.createReadStream(photo.path);
-      const photoName = randomImageName()
+      const photoName = randomImageName();
       const params = {
         Bucket: process.env.BUCKET_NAME,
-        Key: photoName, 
+        Key: photoName,
         Body: fileContent,
         ContentType: photo.type,
       };
       const command = new PutObjectCommand(params);
       const data = await s3.send(command);
-      console.log(data)
-      products.photo = photoName
+      products.photo = "https://d26jxww88dzshe.cloudfront.net/" + photoName;
     }
     await products.save();
     res.status(201).send({
@@ -277,74 +298,7 @@ export const updateProductController = async (req, res) => {
   }
 };
 
-// // filters
-export const productFiltersController = async (req, res) => {
-  try {
-    const { checked, radio } = req.body;
-    let args = {};
-    if (checked.length > 0) args.category = checked;
-    if (radio.length) args.price = { $gte: radio[0], $lte: radio[1] };
-    const products = await productModel.find(args);
-    res.status(200).send({
-      success: true,
-      products,
-    });
-  } catch (error) {
-    console.log(error);
-    res.status(400).send({
-      success: false,
-      message: "Error WHile Filtering Products",
-      error,
-    });
-  }
-};
-
-// // product count
-export const productCountController = async (req, res) => {
-  try {
-    const total = await productModel.find({}).estimatedDocumentCount();
-    res.status(200).send({
-      success: true,
-      total,
-    });
-  } catch (error) {
-    console.log(error);
-    res.status(400).send({
-      message: "Error in product count",
-      error,
-      success: false,
-    });
-  }
-};
-
-// // product list base on page
-export const productListController = async (req, res) => {
-  try {
-    const perPage = 6;
-    const page = req.params.page ? req.params.page : 1;
-    const products = await productModel
-      .find({})
-      .skip((page - 1) * perPage)
-      .limit(perPage)
-      .sort({ createdAt: -1 });
-    for (const product of products) {
-      product.photoUrl = "https://d26jxww88dzshe.cloudfront.net/" + product.photo
-    }
-    res.status(200).send({
-      success: true,
-      products,
-    });
-  } catch (error) {
-    console.log(error);
-    res.status(400).send({
-      success: false,
-      message: "error in per page ctrl",
-      error,
-    });
-  }
-};
-
-// // search product
+// search product
 export const searchProductController = async (req, res) => {
   try {
     const { keyword } = req.params;
@@ -355,9 +309,7 @@ export const searchProductController = async (req, res) => {
           { description: { $regex: keyword, $options: "i" } },
         ],
       })
-      for (const product of resutls) {
-        product.photoUrl = "https://d26jxww88dzshe.cloudfront.net/" + product.photo
-      }
+      .populate("category");
     res.json(resutls);
   } catch (error) {
     console.log(error);
@@ -380,9 +332,6 @@ export const realtedProductController = async (req, res) => {
       })
       .limit(3)
       .populate("category");
-      for (const product of products) {
-        product.photoUrl = "https://d26jxww88dzshe.cloudfront.net/" + product.photo
-      }
     res.status(200).send({
       success: true,
       products,
@@ -402,9 +351,6 @@ export const productCategoryController = async (req, res) => {
   try {
     const category = await categoryModel.findOne({ slug: req.params.slug });
     const products = await productModel.find({ category }).populate("category");
-    for (const product of products) {
-      product.photoUrl = "https://d26jxww88dzshe.cloudfront.net/" + product.photo
-    }
     res.status(200).send({
       success: true,
       category,
@@ -420,55 +366,6 @@ export const productCategoryController = async (req, res) => {
   }
 };
 
-//only filter coffee category products
-export const productCategoryFilter = async (req, res) => {
-  try {
-    const category = await categoryModel.findOne({ slug: "filter-coffee" });
-    const products = await productModel
-      .find({ category })
-      .populate("category");
-      for (const product of products) {
-        product.photoUrl = "https://d26jxww88dzshe.cloudfront.net/" + product.photo
-      }
-    res.status(200).send({
-      success: true,
-      category,
-      products,
-    });
-  } catch (error) {
-    console.log(error);
-    res.status(400).send({
-      success: false,
-      error,
-      message: "Error While Getting products",
-    });
-  }
-};
-
-//only instant coffee category products
-export const productCategoryInstant = async (req, res) => {
-  try {
-    const category = await categoryModel.findOne({ slug: "instant-coffee" });
-    const products = await productModel
-      .find({ category })
-      .populate("category");
-      for (const product of products) {
-        product.photoUrl = "https://d26jxww88dzshe.cloudfront.net/" + product.photo
-      }
-    res.status(200).send({
-      success: true,
-      category,
-      products,
-    });
-  } catch (error) {
-    console.log(error);
-    res.status(400).send({
-      success: false,
-      error,
-      message: "Error While Getting products",
-    });
-  }
-};
 //phonepe
 export const checkoutController = async (req, res) => {
   const amt = req.query.amount;
@@ -533,7 +430,6 @@ export const redirectController = async (req, res) => {
     `http://localhost:3000/cart?paymentStatus=success&transactionId=${transactionId}&merchantId=${merchantId}`
   ); // Include other necessary details
 };
-
 
 //razorpay
 // export const checkoutRazorpayController = async (req, res) => {
@@ -647,21 +543,45 @@ export const paymentVerification = async (req, res) => {
 // };
 
 //product rating
+
 export const rating = async (req, res) => {
+  // console.log(req.body)
   const { id } = req.user;
-  const { star, prodId, message, createdAt, name } = req.body;
+  const { star, prodId, name, createdAt, message } = req.fields;
+  const { photo } = req.files;
+
   try {
-    const product = await productModel
-      .findById(prodId)
-      .sort({ ratings: "-1" });
-      product.photoUrl = "https://d26jxww88dzshe.cloudfront.net/" + product.photo
+    const product = await productModel.findById(prodId).sort({ ratings: "-1" });
+    let imgUrl = "";
+    if (photo) {
+      const fileContent = fs.createReadStream(photo.path);
+      const photoName = randomImageName();
+      const params = {
+        Bucket: process.env.BUCKET_NAME,
+        Key: photoName,
+        Body: fileContent,
+        ContentType: photo.type,
+      };
+      const command = new PutObjectCommand(params);
+      const data = await s3.send(command);
+      imgUrl = `https://d26jxww88dzshe.cloudfront.net/${photoName}`;
+    }
+    const ratingData = {
+      star,
+      message,
+      name,
+      createdAt,
+      postedby: id,
+      imgUrl,
+    };
+
     let alreadyRated = product.ratings.find(
       (userId) => userId.postedby.toString() === id.toString()
     );
     if (alreadyRated) {
       const updateRating = await productModel.updateOne(
         {
-          ratings: { $elemMatch: alreadyRated },
+          "ratings._id": alreadyRated._id,
         },
         {
           $set: {
@@ -669,6 +589,7 @@ export const rating = async (req, res) => {
             "ratings.$.message": message,
             "ratings.$.name": name,
             "ratings.$.createdAt": createdAt,
+            "ratings.$.imgUrl": imgUrl,
           },
         },
         {
@@ -677,24 +598,9 @@ export const rating = async (req, res) => {
       );
       res.json(updateRating);
     } else {
-      const rateProduct = await productModel.findByIdAndUpdate(
-        prodId,
-        {
-          $push: {
-            ratings: {
-              star: star,
-              message: message,
-              name: name,
-              createdAt: createdAt,
-              postedby: id,
-            },
-          },
-        },
-        {
-          timestamps: true,
-        }
-      );
-      res.json(rateProduct);
+      product.ratings.push(ratingData);
+      await product.save();
+      res.json(product);
     }
   } catch (error) {
     console.log(error);
@@ -715,6 +621,9 @@ export const getAllRatings = async (req, res) => {
       .map((item) => item.star)
       .reduce((prev, curr) => prev + curr, 0);
     let actualRating = Math.round((ratingSum / totalRating) * 10) / 10;
+    if (Number(actualRating) === parseInt(actualRating)) {
+      actualRating = actualRating + ".0"; // Add ".0" for whole numbers
+    }
 
     let finalProduct = await productModel.findByIdAndUpdate(
       prodId,
@@ -730,6 +639,147 @@ export const getAllRatings = async (req, res) => {
       success: false,
       error,
       message: "Error in server",
+    });
+  }
+};
+
+export const getAllProductReviews = async (req, res) => {
+  try {
+    const products = await productModel.find().sort({ createdAt: -1 });
+    const allProductReviews = products.map((product) => {
+      // Sort the ratings array by ascending order of createdAt
+      const sortedRatings = product.ratings.slice().sort((a, b) => {
+        return new Date(b.createdAt) - new Date(a.createdAt);
+      });
+
+      return {
+        prodId: product._id,
+        prodName: product.name,
+        ratings: sortedRatings,
+      };
+    });
+
+    res.json({ reviews: allProductReviews });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: "Internal server error" });
+  }
+};
+
+export const getAllReviews = async (req, res) => {
+  try {
+    const products = await productModel.find().sort({ createdAt: -1 });
+    let totalReviews = 0;
+    let totalRatingsSum = 0;
+
+    const allProductReviews = products.map((product) => {
+      // Sort the ratings array by ascending order of createdAt
+      const sortedRatings = product.ratings.slice().sort((a, b) => {
+        return new Date(b.createdAt) - new Date(a.createdAt);
+      });
+      totalReviews += sortedRatings.length;
+      totalRatingsSum += sortedRatings.reduce(
+        (sum, rating) => sum + rating.star,
+        0
+      );
+      return {
+        prodId: product._id,
+        prodName: product.name,
+        ratings: sortedRatings,
+      };
+    });
+
+    const totalAverageRating =
+      totalReviews > 0 ? (totalRatingsSum / totalReviews).toFixed(1) : 0;
+    res.json({ reviews: allProductReviews, totalReviews, totalAverageRating });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: "Internal server error" });
+  }
+};
+
+export const verifyReview = async (req, res) => {
+  const { prodId, reviewId, isVerified } = req.body; // isVerified will be either true or false
+
+  try {
+    const product = await productModel.findById(prodId);
+
+    if (!product) {
+      return res
+        .status(404)
+        .json({ success: false, message: "Product not found" });
+    }
+
+    const review = product.ratings.id(reviewId);
+
+    if (!review) {
+      return res
+        .status(404)
+        .json({ success: false, message: "Review not found" });
+    }
+
+    review.isVerified = isVerified;
+    await product.save();
+
+    res.json({ success: true, message: "Review verification status updated" });
+  } catch (error) {
+    console.log(error);
+    res.status(500).json({
+      success: false,
+      error,
+      message: "Error updating review verification status",
+    });
+  }
+};
+
+export const featureReview = async (req, res) => {
+  const { prodId, reviewId, featureReview } = req.body; // featureReview will be either true or false
+
+  try {
+    const product = await productModel.findById(prodId);
+
+    if (!product) {
+      return res
+        .status(404)
+        .json({ success: false, message: "Product not found" });
+    }
+
+    const review = product.ratings.id(reviewId);
+
+    if (!review) {
+      return res
+        .status(404)
+        .json({ success: false, message: "Review not found" });
+    }
+
+    review.featureReview = featureReview;
+    await product.save();
+
+    res.json({ success: true, message: "featureReview status updated" });
+  } catch (error) {
+    console.log(error);
+    res.status(500).json({
+      success: false,
+      error,
+      message: "Error updating review verification status",
+    });
+  }
+};
+
+export const applyCoupon = async (req, res) => {
+  const { coupon } = req.body;
+  const validCoupon = await couponModel.findOne({ name: coupon });
+  if (validCoupon === null) {
+    res.status(201).send({
+      success: false,
+      message: "Invalid Coupon",
+    });
+  } else {
+    res.status(201).send({
+      success: true,
+      coupon: coupon,
+      discount: validCoupon.discount,
+      message: "Coupoun Verified",
     });
   }
 };

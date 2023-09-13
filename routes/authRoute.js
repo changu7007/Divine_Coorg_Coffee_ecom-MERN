@@ -10,6 +10,7 @@ import {
   logout,
   forgotPasswordToken,
   resetPassword,
+  getAllUsers,
 } from "../controllers/authController.js";
 import { isAdmin, requireSignIn } from "../middelware/authMiddleware.js";
 //router object
@@ -35,6 +36,8 @@ router.put("/reset-password/:token", resetPassword);
 
 //test routes
 router.get("/test", requireSignIn, isAdmin, testController);
+router.get("/allusers", requireSignIn, isAdmin, getAllUsers);
+
 
 // protected user route
 router.get("/user-auth", requireSignIn, (req, res) => {

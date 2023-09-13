@@ -33,7 +33,7 @@ const productSchema = new mongoose.Schema(
     },
     sold: {
       type: Number,
-      default:0,
+      default: 0,
     },
     weigh: {
       type: Number,
@@ -52,25 +52,29 @@ const productSchema = new mongoose.Schema(
       required: false,
     },
     photo: {
-        type: String,
-        required: true,
-      },
-    photoUrl: {
-        type: String,
-      },
+      type: String,
+      required: true,
+    },
     shipping: {
       type: Number,
       required: false,
-
     },
+    isFeatured: { type: Boolean, default: false },
+    isNewArrival: { type: Boolean, default: false },
     ratings: [
       {
         star: Number,
         message: String,
         name: String,
+        imgUrl: {
+          type: String,
+        },
+        isVerified: { type: Boolean, default: false },
+        featureReview: { type: Boolean, default: false },
         createdAt: String,
         postedby: { type: mongoose.ObjectId, ref: "users" },
       },
+      { timestamps: true }
     ],
     totalrating: {
       type: String,

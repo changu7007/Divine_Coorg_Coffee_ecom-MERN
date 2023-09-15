@@ -19,13 +19,13 @@ const orderSchema = new mongoose.Schema(
       type: Number,
       default: 0,
     },
-    shippingDetails: {
-      name: reqString,
-      phone: reqString,
-      address: reqString,
-      city: reqString,
-      pincode: reqNumber,
-      state: reqString,
+    shippingDetails : {
+      name:reqString,
+      phone:reqString,
+      address:reqString,
+      city:reqString,
+      pincode:reqNumber,
+      state:reqString,
     },
     products: [
       {
@@ -63,10 +63,6 @@ const orderSchema = new mongoose.Schema(
     },
     invoiceUrl: {
       type: String,
-    },
-    month: {
-      type: String,
-      default: new Date().getMonth(),
     },
   },
   { timestamps: true }

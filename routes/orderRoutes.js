@@ -1,6 +1,8 @@
 import express from "express";
 import {
+  getMonthWiseOrderDetails,
   getOrderDetails,
+  getYearlyWiseTotalOrderCount,
   orderGetAllController,
   orderGetController,
   orderPostController,
@@ -16,12 +18,24 @@ router.get("/orders", requireSignIn, orderGetController);
 router.post("/confirmationorders", requireSignIn, sendConfirmationEmail);
 router.get("/all-orders", requireSignIn, isAdmin, orderGetAllController);
 router.get("/get-order/:orderId", getOrderDetails);
+router.get(
+  "/getMonthWiseStats",
+  requireSignIn,
+  isAdmin,
+  getMonthWiseOrderDetails
+);
+router.get(
+  "/getYearlyWiseOrder",
+  requireSignIn,
+  isAdmin,
+  getYearlyWiseTotalOrderCount
+);
+
 router.put(
   "/order-status/:orderId",
   requireSignIn,
   isAdmin,
   orderStatusController
 );
-
 
 export default router;

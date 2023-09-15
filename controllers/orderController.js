@@ -1,8 +1,5 @@
 import orderModel from "../models/orderModel.js";
-import nodemailer from "nodemailer";
-import Mailgen from "mailgen";
 import dotenv from "dotenv";
-import fs from "fs";
 import productModel from "../models/productModel.js";
 import pdfkit from "pdfkit";
 import path from "path";
@@ -12,12 +9,7 @@ import {
   GetObjectCommand,
   DeleteObjectCommand,
 } from "@aws-sdk/client-s3";
-import axios from "axios";
-import easyinvoice from "easyinvoice";
 import { fileURLToPath } from "url";
-import { render } from "@react-email/render";
-import { Resend } from "resend";
-import ejs from "ejs";
 import sendMail from "../utils/sendMail.js";
 
 dotenv.config();
@@ -32,7 +24,6 @@ const s3 = new S3Client({
   },
   region: process.env.AWS_REGION,
 });
-const resend = new Resend(process.env.RESEND_API_KEY);
 
 const generateInvoice = async (orderData) => {
   try {
@@ -278,13 +269,7 @@ export const sendConfirmationEmail = async (req, res) => {
       cartItems,
       subTotal,
     } = req.body;
-    // let transporter = nodemailer.createTransport({
-    //   service: "gmail",
-    //   auth: {
-    //     user: process.env.MAIL,
-    //     pass: process.env.PASS,
-    //   },
-    // });
+
     function calculateTotalPrice(cartItems) {
       const total = cartItems.reduce(
         (total, val) => total + val.oneQuantityPrice,
@@ -317,10 +302,6 @@ export const sendConfirmationEmail = async (req, res) => {
       paymentMethod: paymentMethod,
     };
 
-    // const html = await ejs.renderFile(
-    //   path.join(__dirname, "../emails/order-confirmation.ejs"),
-    //   data
-    // );
     try {
       await sendMail({
         email,
@@ -336,18 +317,6 @@ export const sendConfirmationEmail = async (req, res) => {
     } catch (error) {
       console.log(error);
     }
-
-    // Send the email
-    // let info = await transporter.sendMail({
-    //   from: `"Divine Coorg Coffee" <${process.env.MAIL}>`,
-    //   to: email,
-    //   subject: `Order confirmation - ${orderId}`,
-    //   html: html,
-    // });
-    // console.log(`Message sent: ${info.messageId}`);
-    // return res.status(201).json({
-    //   msg: "Order request Sent Successfully",
-    // });
   } catch (error) {
     res.status(500).send({
       success: false,
